@@ -1,0 +1,126 @@
+#define LIGHT_SENSOR_PIN A0    // Capteur visuel pour la détection de la couleur
+#define PROX_SENSOR_L_PIN A1   //Capteur d'obstacles à gauche
+#define PROX_SENSOR_R_PIN A2   //Capteur d'obstacles à droite
+#define PROX_SENSOR_FL_PIN A3  //Capteur d'obstacles à l'avant gauche
+#define PROX_SENSOR_FR_PIN A4  //Capteur d'obstacles à l'avant droite
+#define PROX_SENSOR_RL_PIN A5  //Capteur d'obstacles à l'arriere gauche
+
+
+#define MOTOR_RF_PIN 2   //Moteur avant-droit
+#define MOTOR_RB_PIN 4   //Moteur arrière-droit
+#define MOTOR_R_SPEED 3  //Gestion de la vitesse des moteurs de droite
+#define MOTOR_LF_PIN 7   //Moteur avant-gauche
+#define MOTOR_LB_PIN 8   //Moteur arrière-gauche
+#define MOTOR_L_SPEED 5  //Gestion de la vitesse des moteurs de gauche
+
+int Speed;
+int Seuil_max = 1000;
+int Seuil_min = 900;
+
+void hardware_setup() {
+  new DCMotor_Hbridge(MOTOR_RF_PIN, MOTOR_RB_PIN, MOTOR_R_SPEED, "ePuck_rightJoint", 2.5, 3 * 3.14159, 1);
+  new DCMotor_Hbridge(MOTOR_LF_PIN, MOTOR_LB_PIN, MOTOR_L_SPEED, "ePuck_leftJoint", 2.5, 3 * 3.14159, 1);
+
+  new VisionSensor(LIGHT_SENSOR_PIN, "ePuck_lightSensor", 0.1);
+  new ProximitySensor(PROX_SENSOR_FL_PIN, "ePuck_proxSensor3", 0.1, 1);
+  new ProximitySensor(PROX_SENSOR_FR_PIN, "ePuck_proxSensor4", 0.1, 1);
+  new ProximitySensor(PROX_SENSOR_L_PIN, "ePuck_proxSensor1", 0.1, 1);
+  new ProximitySensor(PROX_SENSOR_R_PIN, "ePuck_proxSensor6", 0.1, 1);
+  new ProximitySensor(PROX_SENSOR_RL_PIN, "ePuck_proxSensor7", 0.1, 1);
+}
+
+void setup() {
+  Serial.begin(9600);
+
+  pinMode(MOTOR_RF_PIN, OUTPUT);
+  pinMode(MOTOR_RB_PIN, OUTPUT);
+  pinMode(MOTOR_R_SPEED, OUTPUT);
+  pinMode(MOTOR_LF_PIN, OUTPUT);
+  pinMode(MOTOR_LB_PIN, OUTPUT);
+  pinMode(MOTOR_L_SPEED, OUTPUT);
+
+  // Set speed to max
+  analogWrite(MOTOR_R_SPEED, 255);
+  analogWrite(MOTOR_L_SPEED, 255);
+
+  digitalWrite(MOTOR_RF_PIN, HIGH);
+  digitalWrite(MOTOR_RB_PIN, LOW);
+  digitalWrite(MOTOR_LF_PIN, HIGH);
+  digitalWrite(MOTOR_LB_PIN, LOW);
+}
+
+void Forward(int Speed) {
+  digitalWrite(MOTOR_RF_PIN, 1);
+  digitalWrite(MOTOR_RB_PIN, 0);
+  digitalWrite(MOTOR_LF_PIN, 1);
+  digitalWrite(MOTOR_LB_PIN, 0);
+  analogWrite(MOTOR_L_SPEED, Speed);
+  analogWrite(MOTOR_R_SPEED, Speed);
+}
+void Release() {
+  digitalWrite(MOTOR_RF_PIN, 0);
+  digitalWrite(MOTOR_RB_PIN, 0);
+  digitalWrite(MOTOR_LF_PIN, 0);
+  digitalWrite(MOTOR_LB_PIN, 0);
+  analogWrite(MOTOR_L_SPEED, 0);
+  analogWrite(MOTOR_R_SPEED, 0);
+}
+void Backward(int Speed) {
+  digitalWrite(MOTOR_RF_PIN, 0);
+  digitalWrite(MOTOR_RB_PIN, 1);
+  digitalWrite(MOTOR_LF_PIN, 0);
+  digitalWrite(MOTOR_LB_PIN, 1);
+  analogWrite(MOTOR_L_SPEED, Speed);
+  analogWrite(MOTOR_R_SPEED, Speed);
+}
+void Left(int Speed) {
+  digitalWrite(MOTOR_RF_PIN, 1);
+  digitalWrite(MOTOR_RB_PIN, 0);
+  digitalWrite(MOTOR_LF_PIN, 0);
+  digitalWrite(MOTOR_LB_PIN, 1);
+  analogWrite(MOTOR_L_SPEED, -Speed);
+  analogWrite(MOTOR_R_SPEED, Speed);
+}
+void Right(int Speed) {
+  digitalWrite(MOTOR_RF_PIN, 0);
+  digitalWrite(MOTOR_RB_PIN, 1);
+  digitalWrite(MOTOR_LF_PIN, 1);
+  digitalWrite(MOTOR_LB_PIN, 0);
+  analogWrite(MOTOR_R_SPEED, -Speed);
+  analogWrite(MOTOR_L_SPEED, Speed);
+}
+
+void loop() {
+  if ((analogRead(PROX_SENSOR_FL_PIN) >= Seuil_max) || (analogRead(PROX_SENSOR_FR_PIN) >= Seuil_max)) {
+    Forward(55);
+  } else {
+    Release();
+    delay(500);
+    if (analogRead(PROX_SENSOR_R_PIN) > Seuil_max) {
+      while ((analogRead(PROX_SENSOR_FL_PIN) <= Seuil_max) || (analogRead(PROX_SENSOR_FR_PIN) <= Seuil_max)) {
+        Right(55);
+      }
+    } else {
+      if (analogRead(PROX_SENSOR_L_PIN) > Seuil_max) {
+        while ((analogRead(PROX_SENSOR_FL_PIN) <= Seuil_max) || (analogRead(PROX_SENSOR_FR_PIN) <= Seuil_max)) {
+          Left(55);
+        }
+      } else {
+        while ((analogRead(PROX_SENSOR_L_PIN) <= Seuil_max) || (analogRead(PROX_SENSOR_R_PIN) <= Seuil_max)) {
+          Backward(55);
+        }
+        Release();
+        delay(2000);
+        if (analogRead(PROX_SENSOR_L_PIN) > analogRead(PROX_SENSOR_R_PIN)) {
+          while ((analogRead(PROX_SENSOR_FL_PIN) <= Seuil_max) || (analogRead(PROX_SENSOR_FR_PIN) <= Seuil_max)) {
+            Left(55);
+          }
+        } else {
+          while ((analogRead(PROX_SENSOR_FL_PIN) <= Seuil_max) || (analogRead(PROX_SENSOR_FR_PIN) <= Seuil_max)) {
+            Right(55);
+          }
+        }
+      }
+    }
+  }
+}
