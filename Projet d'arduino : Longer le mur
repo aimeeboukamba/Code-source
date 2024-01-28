@@ -1,0 +1,181 @@
+#define LIGHT_SENSOR_PIN A0
+
+#define PROX_SENSOR_L_PIN A1
+#define PROX_SENSOR_R_PIN A2
+#define PROX_SENSOR_FL_PIN A3
+#define PROX_SENSOR_FR_PIN A4
+#define PROX_SENSOR_RL_PIN A5
+#define PROX_SENSOR_RR_PIN 12
+#define PROX_SENSOR_DL_PIN 6
+#define PROX_SENSOR_DR_PIN 9
+
+#define MOTOR_RF_PIN 2
+#define MOTOR_RB_PIN 4
+#define MOTOR_R_SPEED 3
+#define MOTOR_LF_PIN 7
+#define MOTOR_LB_PIN 8
+#define MOTOR_L_SPEED 5
+
+void hardware_setup() {
+  new DCMotor_Hbridge(MOTOR_RF_PIN, MOTOR_RB_PIN, MOTOR_R_SPEED, "ePuck_rightJoint", 2.5, 3 * 3.14159, 1);
+  new DCMotor_Hbridge(MOTOR_LF_PIN, MOTOR_LB_PIN, MOTOR_L_SPEED, "ePuck_leftJoint", 2.5, 3 * 3.14159, 1);
+
+  new VisionSensor(LIGHT_SENSOR_PIN, "ePuck_lightSensor", 0.1);
+  //F=front, R=derriere
+  new ProximitySensor(PROX_SENSOR_FL_PIN, "ePuck_proxSensor3", 0.1, 1);
+  new ProximitySensor(PROX_SENSOR_FR_PIN, "ePuck_proxSensor4", 0.1, 1);
+  new ProximitySensor(PROX_SENSOR_L_PIN, "ePuck_proxSensor1", 0.1, 1);
+  new ProximitySensor(PROX_SENSOR_R_PIN, "ePuck_proxSensor6", 0.1, 1);
+  new ProximitySensor(PROX_SENSOR_RL_PIN, "ePuck_proxSensor7", 0.1, 1);
+  new ProximitySensor(PROX_SENSOR_RR_PIN, "ePuck_proxSensor8", 0.1, 1);
+  new ProximitySensor(PROX_SENSOR_DL_PIN, "ePuck_proxSensor2", 0.1, 1);
+  new ProximitySensor(PROX_SENSOR_DR_PIN, "ePuck_proxSensor5", 0.1, 1);
+}
+int vitesse = 0;  //Les variables utilisées
+int cal = 0;
+double Md = 0;
+double Mf = 0;
+int t = 0;
+int c_noir_trouvee = 0;
+void gauche() {  //Les fonctions pour le déplacement du robot
+  vitesse = 55;
+  digitalWrite(MOTOR_RF_PIN, HIGH);
+  digitalWrite(MOTOR_RB_PIN, LOW);
+  digitalWrite(MOTOR_LF_PIN, LOW);
+  digitalWrite(MOTOR_LB_PIN, HIGH);
+  analogWrite(MOTOR_L_SPEED, -vitesse);
+  analogWrite(MOTOR_R_SPEED, vitesse);
+}
+void avancer() {
+  vitesse = 55;
+  digitalWrite(MOTOR_RF_PIN, HIGH);
+  digitalWrite(MOTOR_RB_PIN, LOW);
+  digitalWrite(MOTOR_LF_PIN, HIGH);
+  digitalWrite(MOTOR_LB_PIN, LOW);
+  analogWrite(MOTOR_L_SPEED, vitesse + cal);
+  analogWrite(MOTOR_R_SPEED, vitesse - cal);
+}
+void droite() {
+  vitesse = 55;
+  digitalWrite(MOTOR_RF_PIN, LOW);
+  digitalWrite(MOTOR_RB_PIN, HIGH);
+  digitalWrite(MOTOR_LF_PIN, HIGH);
+  digitalWrite(MOTOR_LB_PIN, LOW);
+  analogWrite(MOTOR_L_SPEED, vitesse);
+  analogWrite(MOTOR_R_SPEED, -vitesse);
+}
+void reculer() {
+  vitesse = 55;
+  digitalWrite(MOTOR_RF_PIN, LOW);
+  digitalWrite(MOTOR_RB_PIN, HIGH);
+  digitalWrite(MOTOR_LF_PIN, LOW);
+  digitalWrite(MOTOR_LB_PIN, HIGH);
+  analogWrite(MOTOR_L_SPEED, vitesse + cal);
+  analogWrite(MOTOR_R_SPEED, vitesse - cal);
+}
+void arret() {
+  vitesse = 0;
+  digitalWrite(MOTOR_RF_PIN, LOW);
+  digitalWrite(MOTOR_RB_PIN, LOW);
+  digitalWrite(MOTOR_LF_PIN, LOW);
+  digitalWrite(MOTOR_LB_PIN, LOW);
+
+  analogWrite(MOTOR_R_SPEED, vitesse);
+  analogWrite(MOTOR_L_SPEED, vitesse);
+}
+void avancer_mur() {  //La fonction pour que le robot avance en suivant le mur
+  float erreur;
+  if (distance(analogRead(PROX_SENSOR_L_PIN)) <= 30 && distance(analogRead(PROX_SENSOR_FL_PIN)) == 0) {
+    cal = -30;  //Lorsque le robot doit tourner à gauche car le mur de gauche n'est plus détecté
+  }
+  else { //Calcul la différence de distance entre deux capteurs de gauche pour ajuster la direction du robot
+    erreur = distance(analogRead(PROX_SENSOR_FL_PIN)) - distance(analogRead(PROX_SENSOR_RL_PIN));
+    cal = erreur * 1;  
+  //Cette boucle sert également à tourner à droite si on detecte un mur en face
+  }
+  avancer();
+}
+void autonome() { //Sert à faire avancer le robot en vérifiant s'il passe sur la case noir
+  avancer_mur();
+  if (couleur() == 0) {
+     couleur_case();
+    }
+}
+void couleur_case() { //trouve s'il est sur la case noire
+
+  Md = 0;
+  Mf = 0;
+  if (couleur() == 0) {
+    Md = millis(); //injecte un temps donné dés la detection du noir
+  }
+  while (couleur() == 0 && c_noir_trouvee == 0) { //tant que le noir est détecté
+    if (millis() - Md > 500.0) { //mesure du temps pour savoir si on est sur la case noire ou sur une ligne noire
+      c_noir_trouvee = 1;
+      Serial.println("La case noire a été trouvé");
+      break;
+    }
+  }
+}
+int couleur() { //fonction pour connaitre la couleur détectée
+  int c;
+  int b;
+  c = analogRead(LIGHT_SENSOR_PIN);
+  if (c < 150) {
+    b = 0; //Noir
+  }
+  else if (c > 500) {
+    b = 2; //Blanc
+  }
+  else {
+    b = 1; //Rouge
+  }
+  return b;
+}
+float distance(int Vcapteur) { //fonction pour connaitre la distance détecté par les capteurs
+  float pourcentage;
+  pourcentage = (100 - (Vcapteur / 1023.0) * 100);
+  return pourcentage;
+  //pourncentage à 27 pour les capteurs Front pour etre au milieu de la case
+  //DR=1.4*R
+}
+void setup() {
+  Serial.begin(4800);
+  pinMode(LIGHT_SENSOR_PIN, INPUT);
+  pinMode(PROX_SENSOR_L_PIN, INPUT);
+  pinMode(PROX_SENSOR_R_PIN, INPUT);
+  pinMode(PROX_SENSOR_FL_PIN, INPUT);
+  pinMode(PROX_SENSOR_FR_PIN, INPUT);
+  pinMode(PROX_SENSOR_RL_PIN, INPUT);
+  pinMode(PROX_SENSOR_RR_PIN, INPUT);
+  pinMode(PROX_SENSOR_DL_PIN, INPUT);
+  pinMode(PROX_SENSOR_DR_PIN, INPUT);
+
+  pinMode(MOTOR_RF_PIN, OUTPUT);
+  pinMode(MOTOR_RB_PIN, OUTPUT);
+  pinMode(MOTOR_R_SPEED, OUTPUT);
+  pinMode(MOTOR_LF_PIN, OUTPUT);
+  pinMode(MOTOR_LB_PIN, OUTPUT);
+  pinMode(MOTOR_L_SPEED, OUTPUT);
+
+  // Set speed to max
+
+  while (distance(analogRead(PROX_SENSOR_FR_PIN)) != 0 || distance(analogRead(PROX_SENSOR_FL_PIN)) != 0 || distance(analogRead(PROX_SENSOR_R_PIN)) == 0 || distance(analogRead(PROX_SENSOR_L_PIN)) == 0) {
+  droite(); //boucle pour se remettre droit si nécessaire au début de la simulation
+  }
+  Serial.println("FIN WHILE");
+  arret();
+}
+void loop() {
+  if (c_noir_trouvee == 0) {
+    autonome();  //chercher la case noire (jusqu'à ce qu'elle soit trouvée)
+  }
+  else //lorsque la case noire a été trouvée
+  {
+    while (couleur() != 1) { //tant que la case rouge n'a pas été retrouvé
+      autonome(); //avancer jusqu'à trouver la case rouge
+    }
+    delay(500);
+    arret(); //s'arreter car la case rouge a été retrouvée
+  }
+
+}
