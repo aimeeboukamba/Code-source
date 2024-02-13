@@ -1,126 +1,192 @@
-#define LIGHT_SENSOR_PIN A0    // Capteur visuel pour la détection de la couleur
-#define PROX_SENSOR_L_PIN A1   //Capteur d'obstacles à gauche
-#define PROX_SENSOR_R_PIN A2   //Capteur d'obstacles à droite
-#define PROX_SENSOR_FL_PIN A3  //Capteur d'obstacles à l'avant gauche
-#define PROX_SENSOR_FR_PIN A4  //Capteur d'obstacles à l'avant droite
-#define PROX_SENSOR_RL_PIN A5  //Capteur d'obstacles à l'arriere gauche
+int ENA=9; //PMW
+int EN1=2; //I/O
+int EN2=5; //I/O
 
-
-#define MOTOR_RF_PIN 2   //Moteur avant-droit
-#define MOTOR_RB_PIN 4   //Moteur arrière-droit
-#define MOTOR_R_SPEED 3  //Gestion de la vitesse des moteurs de droite
-#define MOTOR_LF_PIN 7   //Moteur avant-gauche
-#define MOTOR_LB_PIN 8   //Moteur arrière-gauche
-#define MOTOR_L_SPEED 5  //Gestion de la vitesse des moteurs de gauche
-
+int ENB=10; //PMW
+int EN4=4; //I/O
+int EN3=3; //I/O
 int Speed;
 int Seuil_max = 1000;
 int Seuil_min = 900;
 
-void hardware_setup() {
-  new DCMotor_Hbridge(MOTOR_RF_PIN, MOTOR_RB_PIN, MOTOR_R_SPEED, "ePuck_rightJoint", 2.5, 3 * 3.14159, 1);
-  new DCMotor_Hbridge(MOTOR_LF_PIN, MOTOR_LB_PIN, MOTOR_L_SPEED, "ePuck_leftJoint", 2.5, 3 * 3.14159, 1);
-
-  new VisionSensor(LIGHT_SENSOR_PIN, "ePuck_lightSensor", 0.1);
-  new ProximitySensor(PROX_SENSOR_FL_PIN, "ePuck_proxSensor3", 0.1, 1);
-  new ProximitySensor(PROX_SENSOR_FR_PIN, "ePuck_proxSensor4", 0.1, 1);
-  new ProximitySensor(PROX_SENSOR_L_PIN, "ePuck_proxSensor1", 0.1, 1);
-  new ProximitySensor(PROX_SENSOR_R_PIN, "ePuck_proxSensor6", 0.1, 1);
-  new ProximitySensor(PROX_SENSOR_RL_PIN, "ePuck_proxSensor7", 0.1, 1);
-}
+#define trigPinAvantt 11 // defini les broches du capteur DROIT
+#define echoPinAvantt 12 
+#define trigPinDroit A5 // defini les broches du capteur DROIT
+#define echoPinDroit A4 
+#define trigPinGauche A3 // defini les broches du capteur GAUCHE
+#define echoPinGauche A2 
 
 void setup() {
-  Serial.begin(9600);
+  // put your setup code here, to run once:
+pinMode(ENA,OUTPUT);
+pinMode(ENB,OUTPUT);
+pinMode(EN1,OUTPUT);
+pinMode(EN2,OUTPUT);
+pinMode(EN3,OUTPUT);
+pinMode(EN4,OUTPUT);
 
-  pinMode(MOTOR_RF_PIN, OUTPUT);
-  pinMode(MOTOR_RB_PIN, OUTPUT);
-  pinMode(MOTOR_R_SPEED, OUTPUT);
-  pinMode(MOTOR_LF_PIN, OUTPUT);
-  pinMode(MOTOR_LB_PIN, OUTPUT);
-  pinMode(MOTOR_L_SPEED, OUTPUT);
+pinMode(trigPinAvant, OUTPUT);// envoie les ultra-sons AVANT
+pinMode(echoPinAvant, INPUT);// recoit l'echo AVANT
+pinMode(trigPinDroit, OUTPUT);// envoie les ultra-sons DROIT
+pinMode(echoPinDroit, INPUT);// recoit l'echo DROIT 
+pinMode(trigPinGauche, OUTPUT);// envoie les ultra-sons GAUCHE
+pinMode(echoPinGauche, INPUT);// recoit l'echo GAUCHE
 
-  // Set speed to max
-  analogWrite(MOTOR_R_SPEED, 255);
-  analogWrite(MOTOR_L_SPEED, 255);
-
-  digitalWrite(MOTOR_RF_PIN, HIGH);
-  digitalWrite(MOTOR_RB_PIN, LOW);
-  digitalWrite(MOTOR_LF_PIN, HIGH);
-  digitalWrite(MOTOR_LB_PIN, LOW);
+digitalWrite(ENA,0);
+digitalWrite(ENB,0);
+digitalWrite(EN1,0);
+digitalWrite(EN2,1);
+digitalWrite(EN3,0);
+digitalWrite(EN4,1);
 }
 
-void Forward(int Speed) {
-  digitalWrite(MOTOR_RF_PIN, 1);
-  digitalWrite(MOTOR_RB_PIN, 0);
-  digitalWrite(MOTOR_LF_PIN, 1);
-  digitalWrite(MOTOR_LB_PIN, 0);
-  analogWrite(MOTOR_L_SPEED, Speed);
-  analogWrite(MOTOR_R_SPEED, Speed);
-}
 void Release() {
-  digitalWrite(MOTOR_RF_PIN, 0);
-  digitalWrite(MOTOR_RB_PIN, 0);
-  digitalWrite(MOTOR_LF_PIN, 0);
-  digitalWrite(MOTOR_LB_PIN, 0);
-  analogWrite(MOTOR_L_SPEED, 0);
-  analogWrite(MOTOR_R_SPEED, 0);
+  analogWrite(ENA, 0);
+  analogWrite(ENB, 0);
 }
 void Backward(int Speed) {
-  digitalWrite(MOTOR_RF_PIN, 0);
-  digitalWrite(MOTOR_RB_PIN, 1);
-  digitalWrite(MOTOR_LF_PIN, 0);
-  digitalWrite(MOTOR_LB_PIN, 1);
-  analogWrite(MOTOR_L_SPEED, Speed);
-  analogWrite(MOTOR_R_SPEED, Speed);
+  analogWrite(MOTOR_L_SPEED, -Speed);
+  analogWrite(MOTOR_R_SPEED, -Speed);
 }
 void Left(int Speed) {
-  digitalWrite(MOTOR_RF_PIN, 1);
-  digitalWrite(MOTOR_RB_PIN, 0);
-  digitalWrite(MOTOR_LF_PIN, 0);
-  digitalWrite(MOTOR_LB_PIN, 1);
-  analogWrite(MOTOR_L_SPEED, -Speed);
-  analogWrite(MOTOR_R_SPEED, Speed);
+  analogWrite(ENB, -Speed);
+  analogWrite(ENA, Speed);
 }
 void Right(int Speed) {
-  digitalWrite(MOTOR_RF_PIN, 0);
-  digitalWrite(MOTOR_RB_PIN, 1);
-  digitalWrite(MOTOR_LF_PIN, 1);
-  digitalWrite(MOTOR_LB_PIN, 0);
-  analogWrite(MOTOR_R_SPEED, -Speed);
-  analogWrite(MOTOR_L_SPEED, Speed);
+  analogWrite(ENA, -Speed);
+  analogWrite(ENB, Speed);
 }
 
 void loop() {
-  if ((analogRead(PROX_SENSOR_FL_PIN) >= Seuil_max) || (analogRead(PROX_SENSOR_FR_PIN) >= Seuil_max)) {
-    Forward(55);
-  } else {
-    Release();
-    delay(500);
-    if (analogRead(PROX_SENSOR_R_PIN) > Seuil_max) {
-      while ((analogRead(PROX_SENSOR_FL_PIN) <= Seuil_max) || (analogRead(PROX_SENSOR_FR_PIN) <= Seuil_max)) {
-        Right(55);
-      }
-    } else {
-      if (analogRead(PROX_SENSOR_L_PIN) > Seuil_max) {
-        while ((analogRead(PROX_SENSOR_FL_PIN) <= Seuil_max) || (analogRead(PROX_SENSOR_FR_PIN) <= Seuil_max)) {
-          Left(55);
-        }
-      } else {
-        while ((analogRead(PROX_SENSOR_L_PIN) <= Seuil_max) || (analogRead(PROX_SENSOR_R_PIN) <= Seuil_max)) {
-          Backward(55);
-        }
-        Release();
-        delay(2000);
-        if (analogRead(PROX_SENSOR_L_PIN) > analogRead(PROX_SENSOR_R_PIN)) {
-          while ((analogRead(PROX_SENSOR_FL_PIN) <= Seuil_max) || (analogRead(PROX_SENSOR_FR_PIN) <= Seuil_max)) {
-            Left(55);
-          }
-        } else {
-          while ((analogRead(PROX_SENSOR_FL_PIN) <= Seuil_max) || (analogRead(PROX_SENSOR_FR_PIN) <= Seuil_max)) {
-            Right(55);
-          }
-        }
-      }
+long duration, distance; // MESURE OBSTACLE FRONTAL AVANT 
+digitalWrite(trigPinAvant, LOW); 
+delayMicroseconds(2);
+digitalWrite(trigPinAvant, HIGH); 
+delayMicroseconds(10);
+digitalWrite(trigPinAvant, LOW); 
+duration = pulseIn(echoPinAvant, HIGH); 
+distance = (duration/2) / 29.1;// converti la distance en cm 
+ 
+if (distance < 18)/* TESTE SI OBSTACLE FRONTAL AVANT A MOINS DE 18CM */ 
+{ 
+    Serial.println ("DETECTION OBSTACLE FRONTAL" ); // si besoin d'afficher 
+infos
+    Serial.print ("DISTANCE " ); 
+    Serial.print ( distance); 
+    Serial.print ( " CM!"); 
+    Serial.println ("CORRIGER TRAJECTOIRE"); 
+    motorsD.run(RELEASE);
+    motorsG.run(RELEASE);
+
+    delay(5);
+    long duration, distance; // MESURE SI OBSTACLE A DROITE
+    digitalWrite(trigPinDroit, LOW); 
+    delayMicroseconds(2);
+    digitalWrite(trigPinDroit, HIGH); 
+    delayMicroseconds(10); 
+    digitalWrite(trigPinDroit, LOW); 
+    duration = pulseIn(echoPinDroit, HIGH); 
+    distance = (duration/2) / 29.1;// converti la distance en cm 
+    
+        if (distance < 40)/* TESTE SI OBSTACLE A DROITE A MOINS DE 40CM */  { 
+        Serial.println ("DETECTION OBSTACLE à droite" ); 
+        Serial.print ("DISTANCE " ); 
+        Serial.print ( distance); 
+        Serial.print ( " CM!"); 
+        Serial.println ("NE PAS TOURNER A DROITE"); 
+        delay(500);
+ 
+        long duration, distance; // MESURE SI OBSTACLE A GAUCHE
+        digitalWrite(trigPinGauche, LOW); 
+        delayMicroseconds(2); 
+        digitalWrite(trigPinGauche, HIGH); 
+        delayMicroseconds(10);
+        digitalWrite(trigPinGauche, LOW); 
+        duration = pulseIn(echoPinGauche, HIGH); 
+        distance = (duration/2) / 29.1;// converti la distance en cm 
+        
+            if (distance < 40)/* TESTE SI OBSTACLE A GAUCHE A MOINS DE 40 CM */ { 
+            Serial.println ("DETECTION OBSTACLE à gauche" ); 
+            Serial.print ("DISTANCE " ); 
+            Serial.print ( distance); 
+            Serial.print ( " CM!"); 
+            Serial.println ("NE PAS TOURNER A GAUCHE-FAIRE MARCHE ARRIERE + DEMI TOUR"); 
+            delay(500);
+            motorsD.run(BACKWARD); // RECULE LENTEMENT
+            motorsG.run (BACKWARD);
+            motorsG.setSpeed(100); 
+            motorsD.setSpeed(100);
+            delay(1500);
+ 
+            motorsD.run(FORWARD); // FAIT DEMI TOUR 
+            motorsG.run (BACKWARD);
+            motorsG.setSpeed(200); 
+            motorsD.setSpeed(200);
+            delay(1500); // AJUSTER DUREE du DELAY SELON TENSION ACCU ET TESTURE DU SOL
+            }
+            else { // TOURNE A GAUCHE
+            motorsD.run(FORWARD); 
+            motorsG.run (BACKWARD);
+            motorsG.setSpeed(200); 
+            motorsD.setSpeed(200);
+            delay(800);// AJUSTER DUREE du DELAY SELON TENSION ACCU ET TESTURE DU SOL
+            motorsD.run(RELEASE);
+            motorsG.run(RELEASE);
+            delay(1500); 
+            }
+       
+        }  
+       else { // TOURNE A DROITE
+       motorsD.run(BACKWARD); 
+       motorsG.run (FORWARD);
+       motorsG.setSpeed(200); 
+       motorsD.setSpeed(200);
+       delay(800);// AJUSTER DUREE du DELAY SELON TENSION ACCU ET TESTURE DU SOL
+       motorsD.run(RELEASE);
+       motorsG.run(RELEASE);
+       delay(1500); 
+            }       
+}       
+else { // PAS OBSTACLE DEVANT DONC MARCHE AVANT 
+// MESURE OBSTACLE A DROITE AVEC AFFECTATION COEFF MOTEURS GAUCHE ! 
+(CMG)
+    delay(5);
+    long duration, distance; // MESURE OBSTACLE A DROITE
+    digitalWrite(trigPinDroit, LOW); 
+    delayMicroseconds(2);
+    digitalWrite(trigPinDroit, HIGH); 
+    delayMicroseconds(10);
+    digitalWrite(trigPinDroit, LOW); 
+    duration = pulseIn(echoPinDroit, HIGH); 
+    distance = (duration/2) / 29.1;// converti la distance en cm 
+    if (distance > 13) { 
+    motorsG.run(FORWARD); 
+    motorsG.setSpeed(200);
     }
-  }
+    else {
+    float CMG = ((4+(distance-7))/10);
+    motorsG.run(FORWARD); 
+    motorsG.setSpeed(200*CMG);
+    }
+ 
+// MESURE OBSTACLE A GAUCHE AVEC AFFECTATION COEFF MOTEUR DROITS !(CMD)
+       delay(5);
+       //long duration, distance; // MESURE OBSTACLE A GAUCHE
+       digitalWrite(trigPinGauche, LOW); 
+       delayMicroseconds(2); 
+       digitalWrite(trigPinGauche, HIGH); 
+       delayMicroseconds(10);
+       digitalWrite(trigPinGauche, LOW); 
+       duration = pulseIn(echoPinGauche, HIGH); 
+       distance = (duration/2) / 29.1;// converti la distance en cm 
+       if (distance > 13) { 
+       motorsD.run(FORWARD); 
+       motorsD.setSpeed(200);
+        }
+       else {
+       float CMD = ((4+(distance-7))/10);
+       motorsD.run(FORWARD); 
+       motorsD.setSpeed(200*CMD);
+        }
+  } 
 }
