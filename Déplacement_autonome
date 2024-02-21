@@ -75,8 +75,7 @@ infos
     Serial.print ( distance); 
     Serial.print ( " CM!"); 
     Serial.println ("CORRIGER TRAJECTOIRE"); 
-    motorsD.run(RELEASE);
-    motorsG.run(RELEASE);
+    Release();
 
     delay(5);
     long duration, distance; // MESURE SI OBSTACLE A DROITE
@@ -112,81 +111,28 @@ infos
             Serial.print ( " CM!"); 
             Serial.println ("NE PAS TOURNER A GAUCHE-FAIRE MARCHE ARRIERE + DEMI TOUR"); 
             delay(500);
-            motorsD.run(BACKWARD); // RECULE LENTEMENT
-            motorsG.run (BACKWARD);
-            motorsG.setSpeed(100); 
-            motorsD.setSpeed(100);
+            Backward(55);
             delay(1500);
  
-            motorsD.run(FORWARD); // FAIT DEMI TOUR 
-            motorsG.run (BACKWARD);
-            motorsG.setSpeed(200); 
-            motorsD.setSpeed(200);
-            delay(1500); // AJUSTER DUREE du DELAY SELON TENSION ACCU ET TESTURE DU SOL
+            Left(55); // FAIT DEMI TOUR 
+            delay(1500); 
             }
             else { // TOURNE A GAUCHE
-            motorsD.run(FORWARD); 
-            motorsG.run (BACKWARD);
-            motorsG.setSpeed(200); 
-            motorsD.setSpeed(200);
-            delay(800);// AJUSTER DUREE du DELAY SELON TENSION ACCU ET TESTURE DU SOL
-            motorsD.run(RELEASE);
-            motorsG.run(RELEASE);
+            Right(55);
+            delay(800);
+            Release();
             delay(1500); 
             }
        
         }  
        else { // TOURNE A DROITE
-       motorsD.run(BACKWARD); 
-       motorsG.run (FORWARD);
-       motorsG.setSpeed(200); 
-       motorsD.setSpeed(200);
+       Right(55);
        delay(800);// AJUSTER DUREE du DELAY SELON TENSION ACCU ET TESTURE DU SOL
-       motorsD.run(RELEASE);
-       motorsG.run(RELEASE);
+       Release();
        delay(1500); 
             }       
 }       
 else { // PAS OBSTACLE DEVANT DONC MARCHE AVANT 
-// MESURE OBSTACLE A DROITE AVEC AFFECTATION COEFF MOTEURS GAUCHE ! 
-(CMG)
-    delay(5);
-    long duration, distance; // MESURE OBSTACLE A DROITE
-    digitalWrite(trigPinDroit, LOW); 
-    delayMicroseconds(2);
-    digitalWrite(trigPinDroit, HIGH); 
-    delayMicroseconds(10);
-    digitalWrite(trigPinDroit, LOW); 
-    duration = pulseIn(echoPinDroit, HIGH); 
-    distance = (duration/2) / 29.1;// converti la distance en cm 
-    if (distance > 13) { 
-    motorsG.run(FORWARD); 
-    motorsG.setSpeed(200);
-    }
-    else {
-    float CMG = ((4+(distance-7))/10);
-    motorsG.run(FORWARD); 
-    motorsG.setSpeed(200*CMG);
-    }
- 
-// MESURE OBSTACLE A GAUCHE AVEC AFFECTATION COEFF MOTEUR DROITS !(CMD)
-       delay(5);
-       //long duration, distance; // MESURE OBSTACLE A GAUCHE
-       digitalWrite(trigPinGauche, LOW); 
-       delayMicroseconds(2); 
-       digitalWrite(trigPinGauche, HIGH); 
-       delayMicroseconds(10);
-       digitalWrite(trigPinGauche, LOW); 
-       duration = pulseIn(echoPinGauche, HIGH); 
-       distance = (duration/2) / 29.1;// converti la distance en cm 
-       if (distance > 13) { 
-       motorsD.run(FORWARD); 
-       motorsD.setSpeed(200);
-        }
-       else {
-       float CMD = ((4+(distance-7))/10);
-       motorsD.run(FORWARD); 
-       motorsD.setSpeed(200*CMD);
-        }
+Forward(55);
   } 
 }
