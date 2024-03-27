@@ -5,8 +5,12 @@ import numpy as np
 import face_recognition
 import os
 from datetime import datetime
+
 # from PIL import ImageGrab
- 
+
+#I/Création de la base de données
+    #I.1-)Récuperer les noms associés à chaque image
+val=False 
 path = r"C:\Users\aimee\OneDrive\Bureau\Images"
 images = []
 classNames = []
@@ -17,73 +21,53 @@ for cl in myList:
  images.append(curImg)
  classNames.append(os.path.splitext(cl)[0])  #remove jpg from the name of the  person#
 print(classNames)
- 
+    #I.2-)Fonction pour encoder toutes les images du dossier Images
 def findEncodings(images):
   encodeList = []
   for img in images:
       img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
       encode = face_recognition.face_encodings(img)[0]
       encodeList.append(encode)
-  return encodeList
- 
-
-
-
-
- 
+  return encodeList 
 encodeListKnown = findEncodings(images)
-print('Encoding Complete')
- 
-cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+print('Encoding Complete') 
 
-detector = FaceDetector(minDetectionCon=0.5, modelSelection=2)
-
- 
+#II/ Récupération et encodage du flux de la caméra  
+cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+detector = FaceDetector(minDetectionCon=0.5, modelSelection=2) 
 while True:
-
     success, img = cap.read()   #img = captureScreen()
-
     imgS = cv2.resize(img,(0,0),None,0.25,0.25)#img resise for simpler processing
     imgS = cv2.cvtColor(imgS, cv2.COLOR_BGR2RGB) #converting into rgb#
-
-
-  
     img, bboxs = detector.findFaces(img, draw=False)
-
     facesCurFrame = face_recognition.face_locations(imgS)
     encodesCurFrame = face_recognition.face_encodings(imgS,facesCurFrame)
- 
+   
+#III/ Comparaison entre les images capturées par la caméra et celles de la base de données
     for encodeFace,faceLoc in zip(encodesCurFrame,facesCurFrame):#zip for using in the same loop#
        matches = face_recognition.compare_faces(encodeListKnown,encodeFace) #send and compare faces 
        faceDis = face_recognition.face_distance(encodeListKnown,encodeFace) #find face distance
        matchIndex = np.argmin(faceDis)
-    
-  
        if bboxs:
          if faceDis[matchIndex]< 0.60:
            name = classNames[matchIndex].upper()
+           val= True
            for bbox in bboxs:
              center = bbox["center"] 
              x, y, w, h = bbox["bbox"]
              score = int(bbox["score"][0] * 100)
-
-            
-      
            else: name = "Unknown"
+           val= False
 
-
+#IV/ Affichage du rectangle à l'écran
            y1,x2,y2,x1 = faceLoc
            y1, x2, y2, x1 = y1*4,x2*4,y2*4,x1*4
            cv2.rectangle(img,(x1,y1),(x2,y2),(0,255,0),2)
            cv2.rectangle(img,(x1,y2-35),(x2,y2),(0,255,0),cv2.FILLED)
            cvzone.putTextRect(img,name,(x1+6,y2-6),cv2.FONT_HERSHEY_COMPLEX,1,(255,255,255),2)
            cvzone.putTextRect(img, f"{score}%", (x, y - 10))
- 
+         print (val)     
     cv2.imshow("Webcam",img)
-    cv2.waitKey(1)
-
-
-# Release the VideoWriter when finished
-
-cap.release()
-cv2.destroyAllWindows()
+    # Wait for 1 millisecond, and keep the window open
+    if cv2.waitKey(1) == ord('q'):
+     break
