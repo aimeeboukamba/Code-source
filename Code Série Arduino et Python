@@ -1,0 +1,25 @@
+const int LED_rouge = 5;
+const int LED_verte = 2;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(LED_rouge, OUTPUT);
+  pinMode(LED_verte, OUTPUT);
+}
+
+void loop() {
+  while (Serial.available() > 0) {
+    bool val = Serial.read();
+    if (val== 'True') {
+      digitalWrite(LED_verte, LOW);
+      delay(1000);
+      digitalWrite(LED_verte, HIGH);
+      delay(500);
+    } else {
+      digitalWrite(LED_rouge, LOW);
+      delay(1500);
+      digitalWrite(LED_verte, HIGH);
+      delay(500);
+    }
+  }
+}
